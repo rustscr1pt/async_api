@@ -1,0 +1,22 @@
+[package]
+name = "reformated_async_api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = { version = "0.4.23", features = ["serde"] }
+pretty_env_logger = "0.4.0"
+reqwest = {version = "0.11", features = ["blocking"]}
+scraper = "0.12.0"
+tokio = {version = "1.12.0", features = ["full"]}
+futures = "0.3"
+serde = { version = "1.0.152", features = ["derive"] }
+warp = "0.3.5"
+urlencoding = "2.1.2"
+openssl = { version = "0.10.35", features = ["vendored"] }
+haversine = "0.2.1"
+serde_json = "1"
+mysql = "24.0.0"
+itertools = "0.11.0"
