@@ -4,18 +4,11 @@ mod async_inner_functions;
 mod base_and_timer;
 
 use std::sync::{Arc};
-use mysql::PooledConn;
+use mysql::{Pool, PooledConn};
 use tokio::sync::Mutex;
 use warp::{Filter};
 use crate::base_and_timer::establish_connection;
 use crate::data_structs::CityWithEvent;
-
-
-fn establish_connection() -> PooledConn {
-    let pool = Pool::new(url).expect("Couldn't connect to a base");
-    println!("Connection with MySQL pool is established!");
-    return pool.get_conn().unwrap();
-}
 
 #[tokio::main]
 async fn main() {
