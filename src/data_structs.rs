@@ -19,7 +19,14 @@ pub struct GroupEvent {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Cities {
-    pub cities : Vec<String>
+    pub cities : Vec<CityWithEvent>
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct CityWithEvent {
+    pub cityname : String,
+    pub total_count : u16,
+    pub firstevent : GroupEvent
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -64,6 +71,7 @@ pub struct VisitorData<'a> {
     pub http_method : &'a str,
     pub request_type : &'a str,
     pub user_agent : &'a str,
+    pub device_id : &'a str,
     pub key_approved : &'a str,
     pub used_key : &'a str,
 }

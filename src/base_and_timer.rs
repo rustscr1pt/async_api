@@ -7,15 +7,17 @@ use tokio::task::{JoinHandle};
 use mysql::*;
 use mysql::prelude::Queryable;
 use crate::{data_structs, parse_manage};
-use crate::data_structs::{GroupEvent, KeyObjected};
+use crate::data_structs::{CityWithEvent, GroupEvent, KeyObjected};
+use itertools::Itertools;
 
 
-pub async fn timer_updatable(updatable_link : Arc<Mutex<Vec<GroupEvent>>>) -> () {
+pub async fn timer_updatable(updatable_link : Arc<Mutex<Vec<GroupEvent>>>, cityevent_link : Arc<Mutex<Vec<CityWithEvent>>>) -> () {
     tokio::spawn(async move {
         let mut timer : u8 = 60;
         loop {
             if timer == 0 {
                 let cloned_updatable = Arc::clone(&updatable_link);
+                let cloned_events = Arc::clone(&cityevent_link);
                 tokio::spawn(async move {
                     let mut processed : Vec<JoinHandle<()>> = Vec::new();
                     println!("Started loading the data at {}\n", Local::now().format("[%Y-%m-%d][%H:%M:%S]"));
@@ -45,7 +47,9 @@ pub async fn timer_updatable(updatable_link : Arc<Mutex<Vec<GroupEvent>>>) -> ()
                     let mut opened_value = cloned_updatable.lock().await;
                     *opened_value = answer;
                     println!("{:#?}", *opened_value);
+                    let cloned_group = opened_value.clone();
                     drop(opened_value);
+                    format_the_final(cloned_group, cloned_events).await;
                 });
                 timer = 60;
             }
@@ -113,4 +117,33 @@ pub fn establish_connection() -> PooledConn {
     let pool = Pool::new(url).expect("Couldn't connect to a base");
     println!("Connection with MySQL pool is established!");
     return pool.get_conn().unwrap();
+}
+
+
+pub async fn format_the_final(events_vec : Vec<GroupEvent>, cityEventsVec : Arc<Mutex<Vec<CityWithEvent>>>) -> () {
+
+    clear_stocks(Arc::clone(&cityEventsVec)).await; // Clear the events vec before adding new data.
+
+    let cities_vec = events_vec.iter().map(|element | element.city.to_string()).collect::<Vec<String>>().into_iter().unique().collect::<Vec<String>>();
+    let mut threads_holder : Vec<JoinHandle<()>> = Vec::new();
+    for city in cities_vec {
+        let cloned_events = events_vec.clone();
+        let cloned_result = Arc::clone(&cityEventsVec);
+        let thread = tokio::spawn(async move {
+            let filtered_by_city = cloned_events.into_iter().filter(|stack| stack.city == city).collect::<Vec<GroupEvent>>();
+            let total_scheduled = filtered_by_city.len();
+            let next_event = filtered_by_city.get(0).expect("Couldn't get a first element").clone();
+            let mut unlocked = cloned_result.lock().await;
+            unlocked.push(CityWithEvent{ cityname: city, total_count : total_scheduled as u16, firstevent: next_event});
+            drop(unlocked)
+        });
+        threads_holder.push(thread);
+    }
+    futures::future::join_all(threads_holder).await;
+}
+
+pub async fn clear_stocks(stock : Arc<Mutex<Vec<CityWithEvent>>>) -> () {
+    println!("Clearing the CityEvents vector");
+    let mut unlocked = stock.lock().await;
+    unlocked.clear()
 }
