@@ -5,6 +5,7 @@ use tokio::sync::Mutex;
 use crate::{data_structs};
 use crate::data_structs::{AVAILABLE_REQUEST, Cities, CityWithEvent, FILTER_REQUEST, GET_REQUEST, GroupEvent, Rejected, Themes, VisitorData};
 use warp::{reply::json, Filter, Rejection, Reply};
+use warp::http::Method;
 
 type WebResult<T> = Result<T, Rejection>;
 
@@ -81,6 +82,12 @@ pub async fn return_available_cities(key : String, agent : String, id : String, 
     }
     return Ok(json(&Rejected {
         reply : "Wrong keygen. Please use another one!".to_string()
+    }))
+}
+
+pub async fn refuse_connection(_ : Method) -> WebResult<impl Reply> {
+    return Ok(json(&Rejected {
+        reply: "Access denied. The connection is dropped.".to_string(),
     }))
 }
 

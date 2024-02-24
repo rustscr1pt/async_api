@@ -4,9 +4,10 @@ mod async_inner_functions;
 mod base_and_timer;
 
 use std::sync::{Arc};
-use mysql::{Pool, PooledConn};
+use mysql::{PooledConn};
 use tokio::sync::Mutex;
 use warp::{Filter};
+use async_inner_functions::refuse_connection;
 use crate::base_and_timer::establish_connection;
 use crate::data_structs::CityWithEvent;
 
@@ -49,7 +50,7 @@ async fn main() {
         .and(warp::get())
         .and(warp::header::<String>("Keygen"))
         .and(warp::header::<String>("User-Agent"))
-        .and(warp::header::<String>("Unique-ID")) // Added this header so I could track the ID of the device
+        .and(warp::header::<String>("Unique-ID")) // Added this header, so I could track the ID of the device
         .and(async_inner_functions::with_params(return_link))
         .and(async_inner_functions::with_base(return_check))
         .and(async_inner_functions::with_pool(return_pool))
@@ -76,9 +77,11 @@ async fn main() {
         .and(async_inner_functions::with_crossed(cross_link))
         .and_then(async_inner_functions::return_available_cities);
 
-    println!("Server is initialized.");
+    let refuse_connection = warp::any().and(warp::method()).and_then(refuse_connection); // Refuse connections that don't match other routes.
 
-    let routes = total_events.or(filtered_events).or(available_places);
+    println!("Server is initialized.\nDeployment address : http://localhost:8000/");
+
+    let routes = total_events.or(filtered_events).or(available_places).or(refuse_connection);
 
     warp::serve(routes).run(([0, 0, 0, 0], 8000)).await;
 }
