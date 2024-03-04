@@ -2,6 +2,7 @@ mod parse_manage;
 mod data_structs;
 mod async_inner_functions;
 mod base_and_timer;
+mod dependency_injectors;
 
 use std::sync::{Arc};
 use mysql::{PooledConn};
@@ -28,9 +29,9 @@ async fn main() {
         .and(warp::header::<String>("Keygen"))
         .and(warp::header::<String>("User-Agent"))
         .and(warp::header::<String>("Unique-ID")) // Added this header, so I could track the ID of the device
-        .and(async_inner_functions::with_params(Arc::clone(&transfer)))
-        .and(async_inner_functions::with_base(Arc::clone(&database_keys)))
-        .and(async_inner_functions::with_pool(Arc::clone(&pool)))
+        .and(dependency_injectors::with_params(Arc::clone(&transfer)))
+        .and(dependency_injectors::with_base(Arc::clone(&database_keys)))
+        .and(dependency_injectors::with_pool(Arc::clone(&pool)))
         .and_then(async_inner_functions::return_collected);
 
     let filtered_events = warp::path!("api" / "filter")
@@ -39,9 +40,9 @@ async fn main() {
         .and(warp::header::<String>("Keygen"))
         .and(warp::header::<String>("User-Agent"))
         .and(warp::header::<String>("Unique-ID"))
-        .and(async_inner_functions::with_params(Arc::clone(&transfer)))
-        .and(async_inner_functions::with_base(Arc::clone(&database_keys)))
-        .and(async_inner_functions::with_pool(Arc::clone(&pool)))
+        .and(dependency_injectors::with_params(Arc::clone(&transfer)))
+        .and(dependency_injectors::with_base(Arc::clone(&database_keys)))
+        .and(dependency_injectors::with_pool(Arc::clone(&pool)))
         .and_then(async_inner_functions::return_filtered);
 
     let available_places = warp::path!("api" / "available_places")
@@ -49,9 +50,9 @@ async fn main() {
         .and(warp::header::<String>("Keygen"))
         .and(warp::header::<String>("User-Agent"))
         .and(warp::header::<String>("Unique-ID"))
-        .and(async_inner_functions::with_base(Arc::clone(&database_keys)))
-        .and(async_inner_functions::with_pool(Arc::clone(&pool)))
-        .and(async_inner_functions::with_crossed(Arc::clone(&cityWithEvents)))
+        .and(dependency_injectors::with_base(Arc::clone(&database_keys)))
+        .and(dependency_injectors::with_pool(Arc::clone(&pool)))
+        .and(dependency_injectors::with_crossed(Arc::clone(&cityWithEvents)))
         .and_then(async_inner_functions::return_available_cities);
 
     let refuse_connection = warp::any().and(warp::method()).and_then(refuse_connection); // Refuse connections that don't match other routes.
